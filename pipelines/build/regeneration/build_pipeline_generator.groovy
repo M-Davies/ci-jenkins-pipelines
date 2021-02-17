@@ -28,7 +28,7 @@ node('master') {
     */
     def checkoutAdopt = { ->
       checkout([$class: 'GitSCM',
-        branches: [ [ name: ADOPT_DEFAULTS_JSON["repository"]["branch"] ] ],
+        branches: [ [ name: ADOPT_DEFAULTS_JSON["repository"]["pipeline_branch"] ] ],
         userRemoteConfigs: [ [ url: ADOPT_DEFAULTS_JSON["repository"]["pipeline_url"] ] ]
       ])
     }
@@ -49,7 +49,7 @@ node('master') {
 
       // Load git url and branch and gitBranch. These determine where we will be pulling user configs from.
       def repoUri = (params.REPOSITORY_URL) ?: DEFAULTS_JSON["repository"]["pipeline_url"]
-      repoBranch = (params.REPOSITORY_BRANCH) ?: DEFAULTS_JSON["repository"]["branch"]
+      repoBranch = (params.REPOSITORY_BRANCH) ?: DEFAULTS_JSON["repository"]["pipeline_branch"]
 
       // Load credentials to be used in checking out. This is in case we are checking out a URL that is not Adopts and they don't have their ssh key on the machine.
       def checkoutCreds = (params.CHECKOUT_CREDENTIALS) ?: ""
@@ -86,7 +86,7 @@ node('master') {
         println "[WARNING] ${scriptFolderPath} does not exist in your chosen repository. Updating it to use Adopt's instead"
         checkoutAdopt()
         scriptFolderPath = ADOPT_DEFAULTS_JSON['scriptDirectories']['upstream']
-        println "[SUCCESS] The path is now ${scriptFolderPath} relative to ${ADOPT_DEFAULTS_JSON['repository']['url']}"
+        println "[SUCCESS] The path is now ${scriptFolderPath} relative to ${ADOPT_DEFAULTS_JSON['repository']['pipeline_url']}"
         checkoutUser()
       }
 
@@ -97,7 +97,7 @@ node('master') {
         println "[WARNING] ${nightlyFolderPath} does not exist in your chosen repository. Updating it to use Adopt's instead"
         checkoutAdopt()
         nightlyFolderPath = ADOPT_DEFAULTS_JSON['configDirectories']['nightly']
-        println "[SUCCESS] The path is now ${nightlyFolderPath} relative to ${ADOPT_DEFAULTS_JSON['repository']['url']}"
+        println "[SUCCESS] The path is now ${nightlyFolderPath} relative to ${ADOPT_DEFAULTS_JSON['repository']['pipeline_url']}"
         checkoutUser()
       }
 
@@ -108,7 +108,7 @@ node('master') {
         println "[WARNING] ${jobTemplatePath} does not exist in your chosen repository. Updating it to use Adopt's instead"
         checkoutAdopt()
         jobTemplatePath = ADOPT_DEFAULTS_JSON['templateDirectories']['upstream']
-        println "[SUCCESS] The path is now ${jobTemplatePath} relative to ${ADOPT_DEFAULTS_JSON['repository']['url']}"
+        println "[SUCCESS] The path is now ${jobTemplatePath} relative to ${ADOPT_DEFAULTS_JSON['repository']['pipeline_url']}"
         checkoutUser()
       }
 
@@ -234,7 +234,7 @@ node('master') {
           println "[WARNING] ${config.SCRIPT} does not exist in your chosen repository. Updating it to use Adopt's instead"
           checkoutAdopt()
           config.SCRIPT = ADOPT_DEFAULTS_JSON['scriptDirectories']['weekly']
-          println "[SUCCESS] The path is now ${config.SCRIPT} relative to ${ADOPT_DEFAULTS_JSON['repository']['url']}"
+          println "[SUCCESS] The path is now ${config.SCRIPT} relative to ${ADOPT_DEFAULTS_JSON['repository']['pipeline_url']}"
           checkoutUser()
         }
         config.PIPELINE = "openjdk${javaVersion}-pipeline"

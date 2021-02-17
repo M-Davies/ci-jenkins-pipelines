@@ -39,7 +39,7 @@ node ("master") {
   try {
     // Load git url and branch and gitBranch. These determine where we will be pulling configs from.
     def repoUri = (params.REPOSITORY_URL) ?: DEFAULTS_JSON["repository"]["pipeline_url"]
-    def repoBranch = (params.REPOSITORY_BRANCH) ?: DEFAULTS_JSON["repository"]["branch"]
+    def repoBranch = (params.REPOSITORY_BRANCH) ?: DEFAULTS_JSON["repository"]["pipeline_branch"]
 
     // Load credentials to be used in checking out. This is in case we are checking out a URL that is not Adopts and they don't have their ssh key on the machine.
     def checkoutCreds = (params.CHECKOUT_CREDENTIALS) ?: ""
@@ -58,7 +58,7 @@ node ("master") {
     */
     def checkoutAdopt = { ->
       checkout([$class: 'GitSCM',
-        branches: [ [ name: ADOPT_DEFAULTS_JSON["repository"]["branch"] ] ],
+        branches: [ [ name: ADOPT_DEFAULTS_JSON["repository"]["pipeline_branch"] ] ],
         userRemoteConfigs: [ [ url: ADOPT_DEFAULTS_JSON["repository"]["pipeline_url"] ] ]
       ])
     }
@@ -135,7 +135,7 @@ node ("master") {
 
     // Pull in other parametrised values (or use defaults if they're not defined)
     def jobRoot = (params.JOB_ROOT) ?: DEFAULTS_JSON["jenkinsDetails"]["rootDirectory"]
-    def jenkinsBuildRoot = (params.JENKINS_BUILD_ROOT) ?: "${DEFAULTS_JSON['jenkinsDetails']["rootUrl"]}/job/${jobRoot}/"
+    def jenkinsBuildRoot = (params.JENKINS_BUILD_ROOT) ?: "${DEFAULTS_JSON['jenkinsDetails']['rootUrl']}/job/${jobRoot}/"
 
     def jobTemplatePath = (params.JOB_TEMPLATE_PATH) ?: DEFAULTS_JSON["templateDirectories"]["downstream"]
     if (!fileExists(jobTemplatePath)) {

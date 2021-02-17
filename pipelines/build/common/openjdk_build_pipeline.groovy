@@ -911,10 +911,10 @@ class Build {
         cleanWorkspaceAfter,
         cleanWorkspaceBuildOutputAfter,
         filename,
-        useAdoptShellScripts
+        useAdoptShellScripts,
+        repoHandler
     ) {
         return context.stage("build") {
-            def repoHandler = new RepoHandler(context, USER_REMOTE_CONFIGS)
             if (cleanWorkspace) {
                 try {
 
@@ -952,7 +952,7 @@ class Build {
                     if (useAdoptShellScripts) {
                         repoHandler.checkoutAdopt()
                     } else {
-                        context.checkout context.scm
+                        repoHandler.checkoutUser()
                     }
                     // Perform a git clean outside of checkout to avoid the Jenkins enforced 10 minute timeout
                     // https://github.com/AdoptOpenJDK/openjdk-infrastructure/issues/1553
@@ -968,11 +968,11 @@ class Build {
                 envVars.add("FILENAME=${filename}" as String)
 
                 // Add in the adopt platform config path so it can be used if the user doesn't have one
-                def splitAdoptUrl = ((String)ADOPT_DEFAULTS_JSON['repository']['url']).minus(".git").split('/')
+                def splitAdoptUrl = ((String)ADOPT_DEFAULTS_JSON['repository']['build_url']).minus(".git").split('/')
                 // e.g. https://github.com/AdoptOpenJDK/openjdk-build.git will produce AdoptOpenJDK/openjdk-build
                 String userOrgRepo = "${splitAdoptUrl[splitAdoptUrl.size() - 2]}/${splitAdoptUrl[splitAdoptUrl.size() - 1]}"
                 // e.g. AdoptOpenJDK/openjdk-build/master/build-farm/platform-specific-configurations
-                envVars.add("ADOPT_PLATFORM_CONFIG_LOCATION=${userOrgRepo}/${ADOPT_DEFAULTS_JSON['repository']['branch']}/${ADOPT_DEFAULTS_JSON['configDirectories']['platform']}" as String)
+                envVars.add("ADOPT_PLATFORM_CONFIG_LOCATION=${userOrgRepo}/${ADOPT_DEFAULTS_JSON['repository']['build_branch']}/${ADOPT_DEFAULTS_JSON['configDirectories']['platform']}" as String)
 
                 // Execute build
                 context.withEnv(envVars) {
@@ -983,13 +983,13 @@ class Build {
                                 updateGithubCommitStatus("PENDING", "Build Started")
                             }
                             if (useAdoptShellScripts) {
-                                context.println "[CHECKOUT] Checking out to AdoptOpenJDK/openjdk-build to use their bash scripts..."
-                                repoHandler.checkoutAdopt()
+                                context.println "[CHECKOUT] Checking out to AdoptOpenJDK/openjdk-build to use their shell scripts..."
+                                repoHandler.checkoutBuild()
                                 context.sh(script: "./build-farm/make-adopt-build-farm.sh")
                                 context.println "[CHECKOUT] Reverting pre-build AdoptOpenJDK/openjdk-build checkout..."
-                                context.checkout context.scm
+                                repoHandler.checkoutUser()
                             } else {
-                                context.println "[INFO] Executing user bash scripts..."
+                                context.println "[INFO] Executing user shell scripts..."
                                 context.sh(script: "./build-farm/make-adopt-build-farm.sh")
                             }
                         }
@@ -1169,9 +1169,7 @@ class Build {
 
                 context.stage("queue") {
                     /* This loads the library containing two Helper classes, and causes them to be
-                    imported/updated from their repo. Without the library being imported here, runTests
-                    method will fail to execute the post-build test jobs for reasons unknown.
-                    */
+                    imported/updated from their repo. Without the library being imported here, runTests method will fail to execute the post-build test jobs for reasons unknown.*/
                     context.library(identifier: 'openjdk-jenkins-helper@master')
 
                     // Set Github Commit Status
@@ -1194,6 +1192,8 @@ class Build {
 
                         context.println "[NODE SHIFT] MOVING INTO DOCKER NODE MATCHING LABELNAME ${label}..."
                         context.node(label) {
+                            def repoHandler = new RepoHandler(context, USER_REMOTE_CONFIGS)
+
                             // Cannot clean workspace from inside docker container
                             if (cleanWorkspace) {
 
@@ -1219,8 +1219,6 @@ class Build {
                             if (buildConfig.DOCKER_FILE) {
                                 try {
                                     context.timeout(time: buildTimeouts.DOCKER_CHECKOUT_TIMEOUT, unit: "HOURS") {
-                                        def repoHandler = new RepoHandler(context, USER_REMOTE_CONFIGS)
-                                        // Temporarily use checkout adopt pending https://github.com/AdoptOpenJDK/ci-jenkins-pipelines/issues/34
                                         repoHandler.checkoutAdopt()
 
                                         // Perform a git clean outside of checkout to avoid the Jenkins enforced 10 minute timeout
@@ -1237,7 +1235,8 @@ class Build {
                                         cleanWorkspaceAfter,
                                         cleanWorkspaceBuildOutputAfter,
                                         filename,
-                                        useAdoptShellScripts
+                                        useAdoptShellScripts,
+                                        repoHandler
                                     )
                                 }
 
@@ -1257,7 +1256,8 @@ class Build {
                                         cleanWorkspaceAfter,
                                         cleanWorkspaceBuildOutputAfter,
                                         filename,
-                                        useAdoptShellScripts
+                                        useAdoptShellScripts,
+                                        repoHandler
                                     )
                                 }
                             }
@@ -1284,7 +1284,8 @@ class Build {
                                         cleanWorkspaceAfter,
                                         cleanWorkspaceBuildOutputAfter,
                                         filename,
-                                        useAdoptShellScripts
+                                        useAdoptShellScripts,
+                                        repoHandler
                                     )
                                 }
                             } else {
@@ -1293,7 +1294,8 @@ class Build {
                                     cleanWorkspaceAfter,
                                     cleanWorkspaceBuildOutputAfter,
                                     filename,
-                                    useAdoptShellScripts
+                                    useAdoptShellScripts,
+                                    repoHandler
                                 )
                             }
                         }
